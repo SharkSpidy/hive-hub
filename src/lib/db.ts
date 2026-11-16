@@ -163,7 +163,7 @@ const taskRow = (t: Task) => ({
   due_date: iso(t.dueDate),
   started_at: iso(t.startedAt),
   completed_at: iso(t.completedAt),
-  verified_by: t.verifiedBy,
+  verified_by: t.verifiedBy || null,
   verified_at: iso(t.verifiedAt),
   created_at: iso(t.createdAt),
 })

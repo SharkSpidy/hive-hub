@@ -29,4 +29,4 @@ export function relDue(due: number, now = Date.now()) {
   return { text: `Due ${fmtDate(due)}`, overdue: false }
 }
 
-export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
+export const uid = () => crypto.randomUUID()
