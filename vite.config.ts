@@ -11,14 +11,14 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'The HIVE Hub',
-        short_name: 'HIVE Hub',
+        name: 'HIVE Hub',
+        short_name: 'HIVE',
         description: 'Task tracking and team visibility for HIVE.',
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        theme_color: '#0F766E',
-        background_color: '#F0FDFA',
+        theme_color: '#FFD400',
+        background_color: '#FFFDF4',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },

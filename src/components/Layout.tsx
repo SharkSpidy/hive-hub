@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
-import { Download, Hexagon, LayoutDashboard, ListChecks, LogOut, Shield, UserRound, Users, WifiOff } from 'lucide-react'
+import { Download, LayoutDashboard, ListChecks, LogOut, Shield, UserRound, Users, WifiOff } from 'lucide-react'
+import { LogoMark } from './Logo'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useStore } from '../lib/store'
 import { atLeast } from '../lib/permissions'
@@ -59,15 +60,15 @@ export default function Layout() {
   const link = ({ isActive }: { isActive: boolean }) =>
     cn(
       'flex min-h-10 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition-colors',
-      isActive ? 'bg-primary-dark text-white' : 'text-fg hover:bg-teal-100',
+      isActive ? 'bg-primary-dark text-white' : 'text-fg hover:bg-amber-100',
     )
 
   return (
     <div className="flex h-full flex-col md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-line/70 bg-white p-3 md:flex">
         <div className="mb-4 flex items-center gap-2 px-2 pt-1">
-          <Hexagon className="size-6 fill-accent-dark text-accent-dark" aria-hidden="true" />
-          <span className="text-base font-bold tracking-tight">HIVE Hub</span>
+          <LogoMark className="h-6 w-auto" />
+          <span className="text-base font-extrabold tracking-tight">HIVE</span>
         </div>
         <nav aria-label="Main" className="flex flex-col gap-1">
           {items.map((i) => (
@@ -80,7 +81,7 @@ export default function Layout() {
         <div className="mt-auto space-y-2">
           {installEvt && (
             <button
-              className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-teal-50"
+              className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-amber-50"
               onClick={async () => {
                 await installEvt.prompt()
                 setInstallEvt(null)
@@ -102,7 +103,7 @@ export default function Layout() {
                 signOut()
                 navigate('/login')
               }}
-              className="mt-2 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-md text-sm font-semibold text-muted-fg hover:bg-teal-100 hover:text-fg"
+              className="mt-2 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-md text-sm font-semibold text-muted-fg hover:bg-amber-100 hover:text-fg"
             >
               <LogOut className="size-4" aria-hidden="true" /> Sign out
             </button>
@@ -112,8 +113,8 @@ export default function Layout() {
 
       <header className="flex items-center justify-between border-b border-line/70 bg-white px-4 py-2 md:hidden">
         <div className="flex items-center gap-2">
-          <Hexagon className="size-5 fill-accent-dark text-accent-dark" aria-hidden="true" />
-          <span className="font-bold">HIVE Hub</span>
+          <LogoMark className="h-5 w-auto" />
+          <span className="font-extrabold tracking-tight">HIVE</span>
         </div>
         <div className="flex items-center gap-2">
           <TierBadge tier={me.tier} />
@@ -123,7 +124,7 @@ export default function Layout() {
               signOut()
               navigate('/login')
             }}
-            className="flex size-10 items-center justify-center rounded-lg hover:bg-teal-100"
+            className="flex size-10 items-center justify-center rounded-lg hover:bg-amber-100"
           >
             <LogOut className="size-5" aria-hidden="true" />
           </button>

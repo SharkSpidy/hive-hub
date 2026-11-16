@@ -2,19 +2,21 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #0d9488;
-  --color-primary-dark: #0f766e;
-  --color-secondary: #14b8a6;
-  --color-accent: #ea580c;
-  --color-accent-dark: #c2410c;
-  --color-bg: #f0fdfa;
-  --color-fg: #134e4a;
+
+  /* HIVE colour theory: honey yellow + gold + ink black on warm paper. */
+  --color-primary: #17150f;
+  --color-primary-dark: #0a0a0a;
+  --color-secondary: #ffd629;
+  --color-accent: #ffd400;
+  --color-accent-dark: #e8b800;
+  --color-bg: #fffdf4;
+  --color-fg: #17150f;
   --color-card: #ffffff;
-  --color-muted: #e8f1f4;
-  --color-muted-fg: #475569;
-  --color-line: #99f6e4;
-  --color-danger: #b91c1c;
-  --color-ok: #047857;
+  --color-muted: #f8f2dd;
+  --color-muted-fg: #6a6353;
+  --color-line: #f0e3b4;
+  --color-danger: #b3261e;
+  --color-ok: #1f7a45;
 }
 
 html, body, #root { height: 100%; }
@@ -23,6 +25,7 @@ body { background: var(--color-bg); color: var(--color-fg); font-family: var(--f
 :focus-visible { outline: 2px solid var(--color-primary-dark); outline-offset: 2px; border-radius: 6px; }
 button:not(:disabled), [role="button"], select, a { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
+::selection { background: var(--color-secondary); color: var(--color-primary-dark); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -30,3 +33,12 @@ button:disabled { cursor: not-allowed; }
 
 @keyframes slide-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
 .slide-in { animation: slide-in 0.2s ease-out; }
+
+@keyframes fade-up { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.fade-up { animation: fade-up 0.4s ease-out both; }
+
+/* Honeycomb texture for dark brand surfaces. */
+.honeycomb {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cg fill='none' stroke='%23FFD400' stroke-opacity='0.13' stroke-width='1.4'%3E%3Cpath d='M28 1 52 15v28L28 57 4 43V15z'/%3E%3Cpath d='M28 49 52 63v28L28 105 4 91V63z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 56px 98px;
+}

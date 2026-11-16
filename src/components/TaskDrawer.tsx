@@ -47,7 +47,7 @@ export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClos
               <span className="text-xs font-semibold text-muted-fg">{team ? team.name : 'Org-wide'}</span>
             </div>
           </div>
-          <button ref={closeRef} onClick={onClose} aria-label="Close task" className="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-teal-100">
+          <button ref={closeRef} onClick={onClose} aria-label="Close task" className="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-amber-100">
             <X className="size-5" aria-hidden="true" />
           </button>
         </header>
@@ -76,7 +76,7 @@ export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClos
                   onClick={() => run(setStatus(task.id, s), `Moved to ${STATUS_LABEL[s]}`)}
                   className={cn(
                     'min-h-10 rounded-lg border px-2 text-sm font-semibold transition-colors disabled:opacity-50',
-                    task.status === s ? 'border-primary-dark bg-primary-dark text-white' : 'border-line bg-white hover:bg-teal-50',
+                    task.status === s ? 'border-primary-dark bg-primary-dark text-white' : 'border-line bg-white hover:bg-amber-50',
                   )}
                 >
                   {STATUS_LABEL[s]}
@@ -116,7 +116,7 @@ export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClos
                     <Avatar name={p.fullName} size={28} />
                     <span className="flex-1 text-sm font-semibold">{p.fullName}</span>
                     {manager && (
-                      <button onClick={() => run(unassign(task.id, p.id), `Removed ${p.fullName}`)} aria-label={`Remove ${p.fullName}`} className="flex size-9 items-center justify-center rounded-md text-muted-fg hover:bg-teal-100 hover:text-fg">
+                      <button onClick={() => run(unassign(task.id, p.id), `Removed ${p.fullName}`)} aria-label={`Remove ${p.fullName}`} className="flex size-9 items-center justify-center rounded-md text-muted-fg hover:bg-amber-100 hover:text-fg">
                         <X className="size-4" aria-hidden="true" />
                       </button>
                     )}

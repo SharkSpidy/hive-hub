@@ -51,7 +51,7 @@ export default function NewTaskDialog({ onClose }: { onClose: () => void }) {
       <form onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="nt-title" className="relative flex max-h-[92vh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
         <header className="flex items-center justify-between border-b border-line/70 p-4">
           <h2 id="nt-title" className="text-lg font-bold">New task</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex size-10 items-center justify-center rounded-lg hover:bg-teal-100">
+          <button type="button" onClick={onClose} aria-label="Close" className="flex size-10 items-center justify-center rounded-lg hover:bg-amber-100">
             <X className="size-5" aria-hidden="true" />
           </button>
         </header>
@@ -95,8 +95,8 @@ export default function NewTaskDialog({ onClose }: { onClose: () => void }) {
             <div className="max-h-44 overflow-y-auto rounded-lg border border-line">
               {list.length === 0 && <p className="p-3 text-sm text-muted-fg">No eligible people.</p>}
               {list.map((p) => (
-                <label key={p.id} className="flex min-h-11 cursor-pointer items-center gap-2.5 border-b border-line/50 px-3 last:border-0 hover:bg-teal-50">
-                  <input type="checkbox" className="size-4 accent-teal-700" checked={picked.includes(p.id)} onChange={() => setPicked((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]))} />
+                <label key={p.id} className="flex min-h-11 cursor-pointer items-center gap-2.5 border-b border-line/50 px-3 last:border-0 hover:bg-amber-50">
+                  <input type="checkbox" className="size-4 accent-neutral-900" checked={picked.includes(p.id)} onChange={() => setPicked((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]))} />
                   <Avatar name={p.fullName} size={24} />
                   <span className="text-sm font-medium">{p.fullName}</span>
                   <span className="ml-auto text-xs text-muted-fg">{data.teams.find((t) => t.id === p.teamId)?.name ?? p.tier}</span>

@@ -10,7 +10,7 @@ import NewTaskDialog from '../components/NewTaskDialog'
 import { EmptyState, PageHeader, btn, field } from '../components/ui'
 
 type Scope = 'mine' | 'all'
-const COL_DOT = { todo: 'bg-slate-500', in_progress: 'bg-amber-600', done: 'bg-emerald-700' }
+const COL_DOT = { todo: 'bg-neutral-500', in_progress: 'bg-accent-dark', done: 'bg-ok' }
 
 export default function Tasks() {
   const me = useStore((s) => s.me())!
@@ -60,7 +60,7 @@ export default function Tasks() {
                 key={k}
                 aria-pressed={scope === k}
                 onClick={() => setScope(k)}
-                className={cn('min-h-9 rounded-md px-3 text-sm font-semibold transition-colors', scope === k ? 'bg-primary-dark text-white' : 'hover:bg-teal-50')}
+                className={cn('min-h-9 rounded-md px-3 text-sm font-semibold transition-colors', scope === k ? 'bg-primary-dark text-white' : 'hover:bg-amber-50')}
               >
                 {label}
               </button>

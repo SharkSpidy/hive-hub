@@ -11,9 +11,10 @@ export default function Team() {
   const data = useStore((s) => s.data)
   const orgWide = isOrgWide(me)
   const owned = data.teams.filter((t) => t.coreOwnerId === me.id)
-  const [teamId, setTeamId] = useState(me.teamId ?? owned[0]?.id ?? data.teams[0].id)
+  const [teamId, setTeamId] = useState(me.teamId ?? owned[0]?.id ?? data.teams[0]?.id ?? '')
   const team = data.teams.find((t) => t.id === teamId)
 
+  if (data.teams.length === 0) return <EmptyState title="No subteams yet" hint="Subteams are created in the database." />
   if (!orgWide && !me.teamId) return <EmptyState title="You are not in a subteam yet" hint="A Founder can add you to one." />
   if (!team) return <EmptyState title="Team not found" />
 
@@ -47,9 +48,9 @@ export default function Team() {
         <Card className="mb-4 p-4">
           <h2 className="mb-2 text-sm font-bold">Task mix</h2>
           <div className="flex h-3 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${ts.todo} to do, ${ts.inProgress} in progress, ${ts.done} done`}>
-            <span className="bg-slate-500" style={{ width: `${(ts.todo / Math.max(ts.total, 1)) * 100}%` }} />
-            <span className="bg-amber-600" style={{ width: `${(ts.inProgress / Math.max(ts.total, 1)) * 100}%` }} />
-            <span className="bg-emerald-700" style={{ width: `${(ts.done / Math.max(ts.total, 1)) * 100}%` }} />
+            <span className="bg-neutral-500" style={{ width: `${(ts.todo / Math.max(ts.total, 1)) * 100}%` }} />
+            <span className="bg-accent-dark" style={{ width: `${(ts.inProgress / Math.max(ts.total, 1)) * 100}%` }} />
+            <span className="bg-ok" style={{ width: `${(ts.done / Math.max(ts.total, 1)) * 100}%` }} />
           </div>
           <p className="mt-2 text-sm text-muted-fg">
             <strong className="text-fg">{ts.todo}</strong> to do · <strong className="text-fg">{ts.inProgress}</strong> in progress · <strong className="text-fg">{ts.done}</strong> done · <strong className={ts.overdue ? 'text-danger' : 'text-fg'}>{ts.overdue}</strong> overdue
@@ -73,7 +74,7 @@ export default function Team() {
             {people.map((p) => {
               const st = personStats(p.id, data.tasks)
               return (
-                <tr key={p.id} className="hover:bg-teal-50/60">
+                <tr key={p.id} className="hover:bg-amber-50/60">
                   <td className="px-4 py-2.5">
                     <Link to={`/people/${p.id}`} className="flex items-center gap-2.5 font-semibold hover:underline">
                       <Avatar name={p.fullName} size={28} /> {p.fullName}

@@ -4,11 +4,11 @@ import { PRIORITY_LABEL, STATUS_LABEL, TIER_LABEL } from '../lib/types'
 import { cn, initials } from '../lib/utils'
 
 const TIER_STYLE: Record<Tier, string> = {
-  founder: 'bg-accent-dark text-white',
+  founder: 'bg-accent-dark text-primary',
   core: 'bg-primary-dark text-white',
-  lead: 'bg-teal-100 text-teal-900',
+  lead: 'bg-secondary text-primary',
   member: 'bg-muted text-fg',
-  volunteer: 'bg-white text-muted-fg border border-line',
+  volunteer: 'border border-line bg-white text-muted-fg',
 }
 export const TierBadge = ({ tier }: { tier: Tier }) => (
   <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap', TIER_STYLE[tier])}>{TIER_LABEL[tier]}</span>
@@ -16,8 +16,8 @@ export const TierBadge = ({ tier }: { tier: Tier }) => (
 
 const PRIORITY_STYLE: Record<Priority, string> = {
   low: 'bg-muted text-muted-fg',
-  medium: 'bg-teal-100 text-teal-900',
-  high: 'bg-amber-100 text-amber-900',
+  medium: 'bg-secondary/45 text-primary',
+  high: 'bg-amber-100 text-amber-950',
   urgent: 'bg-red-100 text-red-900',
 }
 export const PriorityBadge = ({ priority }: { priority: Priority }) => (
@@ -26,14 +26,14 @@ export const PriorityBadge = ({ priority }: { priority: Priority }) => (
 
 const STATUS_STYLE: Record<Status, string> = {
   todo: 'bg-muted text-fg',
-  in_progress: 'bg-amber-100 text-amber-900',
+  in_progress: 'bg-secondary/50 text-primary',
   done: 'bg-emerald-100 text-emerald-900',
 }
 export const StatusBadge = ({ status }: { status: Status }) => (
   <span className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-semibold', STATUS_STYLE[status])}>{STATUS_LABEL[status]}</span>
 )
 
-const AVATAR_COLORS = ['bg-teal-700', 'bg-orange-700', 'bg-cyan-800', 'bg-emerald-800', 'bg-sky-800', 'bg-rose-800']
+const AVATAR_COLORS = ['bg-primary-dark', 'bg-[#a17800]', 'bg-[#7a5b00]', 'bg-neutral-700', 'bg-[#8a6d00]', 'bg-neutral-600']
 export function Avatar({ name, size = 28, className }: { name: string; size?: number; className?: string }) {
   const color = AVATAR_COLORS[name.length % AVATAR_COLORS.length]
   return (
@@ -62,9 +62,9 @@ export const PageHeader = ({ title, sub, action }: { title: string; sub?: string
 )
 
 export const btn = {
-  primary: 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-primary-dark px-3.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 disabled:opacity-50',
-  secondary: 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line bg-white px-3.5 text-sm font-semibold text-fg transition-colors hover:bg-teal-50 disabled:opacity-50',
-  accent: 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-accent-dark px-3.5 text-sm font-semibold text-white transition-colors hover:bg-orange-800 disabled:opacity-50',
+  primary: 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-primary-dark px-3.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-50',
+  secondary: 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line bg-white px-3.5 text-sm font-semibold text-fg transition-colors hover:bg-amber-50 disabled:opacity-50',
+  accent: 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-secondary px-3.5 text-sm font-bold text-primary transition-colors hover:bg-accent-dark disabled:opacity-50',
 }
 
 export const field =
