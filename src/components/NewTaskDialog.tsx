@@ -28,7 +28,7 @@ export default function NewTaskDialog({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const tid = teamId || null
+  const tid = teamId.trim().toLowerCase() || null
   const eligible = useMemo(
     () => data.profiles.filter((p) => canAssign(me, tid, p) && p.id !== me.id).filter((p) => (tid ? p.teamId === tid || orgWide : true)),
     [data.profiles, me, tid, orgWide],
@@ -39,6 +39,7 @@ export default function NewTaskDialog({ onClose }: { onClose: () => void }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return setError('Give the task a title.')
+    if (tid && !data.teams.some((team) => team.id === tid)) return setError('Choose a valid subteam.')
     const r = createTask({ title, description, teamId: tid, priority, dueDate: due ? new Date(due + 'T12:00:00').getTime() : null, assigneeIds: picked })
     if (!r.ok) return setError(r.error)
     notify('Task created')

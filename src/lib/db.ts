@@ -170,7 +170,27 @@ const taskRow = (t: Task) => ({
 
 export async function dbInsertTask(task: Task): Promise<Result> {
   if (!supabase) return ok
-  const { error } = await supabase.from('tasks').insert(taskRow(task))
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+  if (authError) return fail(authError.message)
+  if (!user) return fail('Sign in first.')
+
+  const teamId = task.teamId?.trim().toLowerCase() ?? null
+  if (task.teamId && !teamId) return fail('Choose a valid subteam.')
+  if (teamId) {
+    const { data: team, error: teamError } = await supabase.from('teams').select('id').eq('id', teamId).maybeSingle()
+    if (teamError) return fail(teamError.message)
+    if (!team) return fail('The selected subteam does not exist. Choose a valid subteam.')
+  }
+
+  const { error } = await supabase.from('tasks').insert({
+    ...taskRow(task),
+    team_id: teamId,
+    created_by: user.id,
+  })
   if (error) return fail(error.message)
   if (task.assignments.length === 0) return ok
   const { error: aErr } = await supabase.from('task_assignments').insert(

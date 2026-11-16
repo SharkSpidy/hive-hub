@@ -197,7 +197,11 @@ export const useStore = create<State>()((set, get) => {
         })),
       ]
       set((s) => ({ data: { ...s.data, events: [...s.data.events, ...events] } }))
-      if (supabase) persist(async () => (await dbInsertTask(task)).ok ? dbInsertEvents(events) : failTask(task.id))
+      if (supabase) persist(async () => {
+        const result = await dbInsertTask(task)
+        if (!result.ok) return failTask(task.id, result.error)
+        return dbInsertEvents(events)
+      })
       return ok
     },
 
@@ -290,9 +294,9 @@ export const useStore = create<State>()((set, get) => {
 })
 
 /** Removes an optimistically added task after the insert failed. */
-function failTask(taskId: string): Result {
+function failTask(taskId: string, error: string): Result {
   useStore.setState((s) => ({
     data: { ...s.data, tasks: s.data.tasks.filter((t) => t.id !== taskId), events: s.data.events.filter((e) => e.taskId !== taskId) },
   }))
-  return { ok: false, error: 'Could not save the task.' }
+  return { ok: false, error }
 }
