@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { canAssign, isOrgWide } from '../lib/permissions'
+import { canAssign, canCreateTask, isOrgWide } from '../lib/permissions'
 import { PRIORITY_LABEL } from '../lib/types'
 import type { Priority } from '../lib/types'
 import { Avatar, btn, field } from './ui'
@@ -12,6 +12,7 @@ export default function NewTaskDialog({ onClose }: { onClose: () => void }) {
   const createTask = useStore((s) => s.createTask)
   const notify = useStore((s) => s.notify)
   const orgWide = isOrgWide(me)
+  const allowed = canCreateTask(me, me.teamId)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [teamId, setTeamId] = useState<string>(orgWide ? '' : (me.teamId ?? ''))
@@ -33,6 +34,8 @@ export default function NewTaskDialog({ onClose }: { onClose: () => void }) {
     () => data.profiles.filter((p) => canAssign(me, tid, p) && p.id !== me.id).filter((p) => (tid ? p.teamId === tid || orgWide : true)),
     [data.profiles, me, tid, orgWide],
   )
+  if (!allowed) return null
+
   // For team tasks, Core/Founder see that team's people first; for org-wide tasks they see everyone.
   const list = tid ? eligible.filter((p) => p.teamId === tid) : eligible
 

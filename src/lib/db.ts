@@ -245,6 +245,12 @@ export async function dbSetTier(userId: string, tier: Tier): Promise<Result> {
   return error ? fail(error.message) : ok
 }
 
+export async function dbUpdateBio(userId: string, bio: string): Promise<Result> {
+  if (!supabase) return ok
+  const { error } = await supabase.from('profiles').update({ bio }).eq('id', userId)
+  return error ? fail(error.message) : ok
+}
+
 export async function dbSetCoreOwner(teamId: string, coreId: string | null): Promise<Result> {
   if (!supabase) return ok
   const { error } = await supabase.from('teams').update({ core_owner_id: coreId }).eq('id', teamId)

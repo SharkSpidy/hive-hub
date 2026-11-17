@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import type { Data, Priority, Profile, Status, Task, TaskEvent, Tier } from './types'
-import { canAssign, canCreateTask, canSetStatus, canVerify, isTaskManager } from './permissions'
+import { canAssign, canCreateTask, canSetStatus, canVerifyTask, isTaskManager } from './permissions'
 import { supabase } from './supabase'
 import {
   EMPTY_DATA,
@@ -10,6 +10,7 @@ import {
   dbInsertTask,
   dbSetCoreOwner,
   dbSetTier,
+  dbUpdateBio,
   dbUnassign,
   dbUpdateTask,
   loadAll,
@@ -42,6 +43,7 @@ interface State {
   verify: (taskId: string) => Result
   setTier: (userId: string, tier: Tier) => Result
   setCoreOwner: (teamId: string, coreId: string) => Result
+  updateBio: (bio: string) => Result
 }
 
 export const useStore = create<State>()((set, get) => {
@@ -263,7 +265,7 @@ export const useStore = create<State>()((set, get) => {
       mutateTask(
         taskId,
         (t, me) => {
-          if (!canVerify(me, t)) return no('You cannot verify this task. Assignees cannot verify their own work.')
+          if (!canVerifyTask(me, t)) return no('You cannot verify this task. Assignees cannot verify their own work.')
           t.verifiedAt = Date.now()
           t.verifiedBy = me.id
           addEvent({ taskId, actorId: me.id, kind: 'verified' })
@@ -288,6 +290,16 @@ export const useStore = create<State>()((set, get) => {
       if (!me || me.tier !== 'founder') return no('Only Founders can change team owners.')
       set((s) => ({ data: { ...s.data, teams: s.data.teams.map((t) => (t.id === teamId ? { ...t, coreOwnerId: coreId } : t)) } }))
       if (supabase) persist(() => dbSetCoreOwner(teamId, coreId))
+      return ok
+    },
+
+    updateBio: (bio) => {
+      const me = get().me()
+      if (!me) return no('Sign in first.')
+      set((s) => ({
+        data: { ...s.data, profiles: s.data.profiles.map((p) => (p.id === me.id ? { ...p, bio } : p)) },
+      }))
+      if (supabase) persist(() => dbUpdateBio(me.id, bio))
       return ok
     },
   }

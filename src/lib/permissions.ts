@@ -17,7 +17,9 @@ export const isTaskManager = (u: Profile, t: Task) =>
 export const canSeeTask = (u: Profile, t: Task) => isOrgWide(u) || isTaskManager(u, t) || isAssigned(u, t)
 
 export const canCreateTask = (u: Profile, teamId: string | null) =>
-  isOrgWide(u) || (u.tier === 'lead' && teamId !== null && teamId === u.teamId)
+  u.tier === 'founder' ||
+  u.tier === 'core' ||
+  (u.tier === 'lead' && teamId !== null && teamId === u.teamId)
 
 export const canAssign = (u: Profile, taskTeamId: string | null, assignee: Profile) => {
   if (u.tier === 'founder' || u.tier === 'core') return true
@@ -33,7 +35,7 @@ export const canAssign = (u: Profile, taskTeamId: string | null, assignee: Profi
 
 export const canSetStatus = (u: Profile, t: Task) => isTaskManager(u, t) || isAssigned(u, t)
 
-export const canVerify = (u: Profile, t: Task) =>
+export const canVerifyTask = (u: Profile, t: Task) =>
   isTaskManager(u, t) && !isAssigned(u, t) && t.status === 'done' && !t.verifiedAt
 
 export const canSeeProfile = (u: Profile, p: Profile) =>

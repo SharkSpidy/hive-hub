@@ -1,16 +1,21 @@
 import { Link, useParams } from 'react-router-dom'
-import { CalendarDays, Mail, Users } from 'lucide-react'
+import { useState } from 'react'
+import { CalendarDays, Mail, Pencil, Users } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { canSeeProfile, canSeeTask } from '../lib/permissions'
 import { personStats } from '../lib/stats'
 import { STATUS_LABEL } from '../lib/types'
 import { fmtDate, fmtDateTime, relDue } from '../lib/utils'
-import { Avatar, Card, EmptyState, StatusBadge, TierBadge } from '../components/ui'
+import { Avatar, Card, EmptyState, StatusBadge, TierBadge, btn, field } from '../components/ui'
 
 export default function Profile() {
   const { id } = useParams()
   const me = useStore((s) => s.me())!
   const data = useStore((s) => s.data)
+  const updateBio = useStore((s) => s.updateBio)
+  const notify = useStore((s) => s.notify)
+  const [editingBio, setEditingBio] = useState(false)
+  const [bioDraft, setBioDraft] = useState('')
   const person = data.profiles.find((p) => p.id === (id ?? me.id))
   if (!person) return <EmptyState title="Person not found" />
   if (!canSeeProfile(me, person)) return <EmptyState title="You cannot view this profile" hint="You can see people in your own subteam." />
@@ -22,6 +27,18 @@ export default function Profile() {
   const ownedTeams = data.teams.filter((t) => t.coreOwnerId === person.id)
   const open = tasksVisible.filter((t) => t.status !== 'done' && t.assignments.some((a) => a.assigneeId === person.id)).sort((a, b) => (a.dueDate ?? 9e15) - (b.dueDate ?? 9e15))
   const activity = data.events.filter((e) => e.actorId === person.id && tasksVisible.some((t) => t.id === e.taskId)).sort((a, b) => b.at - a.at).slice(0, 8)
+  const ownProfile = person.id === me.id
+
+  const saveBio = (e: React.FormEvent) => {
+    e.preventDefault()
+    const result = updateBio(bioDraft)
+    if (!result.ok) {
+      notify(result.error, 'error')
+      return
+    }
+    setEditingBio(false)
+    notify('Bio updated')
+  }
 
   const kpis = [
     { label: 'Open tasks', value: String(stats.open) },
@@ -42,7 +59,30 @@ export default function Profile() {
             {team && <span className="inline-flex items-center gap-1 text-sm font-semibold"><Users className="size-4" aria-hidden="true" /> {team.name} subteam</span>}
             {ownedTeams.length > 0 && <span className="text-sm font-semibold">Owns {ownedTeams.map((t) => t.name).join(' and ')}</span>}
           </div>
-          <p className="mt-2 text-sm text-muted-fg">{person.bio}</p>
+          {editingBio && ownProfile ? (
+            <form onSubmit={saveBio} className="mt-2 space-y-2">
+              <label htmlFor="profile-bio" className="sr-only">Bio</label>
+              <textarea id="profile-bio" className={`${field} min-h-20 py-2`} value={bioDraft} onChange={(e) => setBioDraft(e.target.value)} />
+              <div className="flex gap-2">
+                <button type="submit" className={btn.primary}>Save bio</button>
+                <button type="button" onClick={() => setEditingBio(false)} className={btn.secondary}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <div className="mt-2 flex items-start gap-2">
+              <p className="text-sm text-muted-fg">{person.bio}</p>
+              {ownProfile && (
+                <button
+                  type="button"
+                  aria-label="Edit bio"
+                  onClick={() => { setBioDraft(person.bio); setEditingBio(true) }}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted-fg hover:bg-amber-100 hover:text-fg"
+                >
+                  <Pencil className="size-4" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-fg">
             <span className="inline-flex items-center gap-1"><Mail className="size-4" aria-hidden="true" /> {person.email}</span>
             <span className="inline-flex items-center gap-1"><CalendarDays className="size-4" aria-hidden="true" /> Joined {fmtDate(person.joinedAt)}</span>

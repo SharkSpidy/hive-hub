@@ -76,6 +76,28 @@ returns boolean language sql stable security definer set search_path = public as
   select coalesce((select tier = 'founder' from public.profiles where id = auth.uid()), false);
 $$;
 
+create or replace function public.protect_profile_self_update()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if old.id = auth.uid() and not public.is_founder() then
+    if new.id is distinct from old.id
+      or new.full_name is distinct from old.full_name
+      or new.email is distinct from old.email
+      or new.tier is distinct from old.tier
+      or new.team_id is distinct from old.team_id
+      or new.joined_at is distinct from old.joined_at then
+      raise exception 'You can only update your own bio.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_protect_self_update on public.profiles;
+create trigger profiles_protect_self_update
+  before update on public.profiles
+  for each row execute function public.protect_profile_self_update();
+
 create or replace function public.can_create_task(p_team text)
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (
@@ -97,6 +119,20 @@ returns boolean language sql stable security definer set search_path = public as
       and (
         me.tier in ('core', 'founder')
         or (me.tier = 'lead' and t.team_id is not null and t.team_id = me.team_id)
+      )
+  );
+$$;
+
+create or replace function public.can_verify_task(p_task uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.tasks t
+    where t.id = p_task
+      and t.status = 'done'
+      and public.can_manage_task(t.id)
+      and not exists (
+        select 1 from public.task_assignments a
+        where a.task_id = t.id and a.assignee_id = auth.uid()
       )
   );
 $$;
@@ -131,6 +167,40 @@ returns boolean language sql stable security definer set search_path = public as
   );
 $$;
 
+create or replace function public.protect_task_verification()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.verified_by is distinct from old.verified_by
+    or new.verified_at is distinct from old.verified_at then
+    if old.verified_by is null
+      and old.verified_at is null
+      and new.verified_by = auth.uid()
+      and new.verified_at is not null
+      and new.status = 'done'
+      and public.can_verify_task(old.id) then
+      return new;
+    end if;
+
+    if old.verified_by is not null
+      and old.verified_at is not null
+      and new.verified_by is null
+      and new.verified_at is null
+      and new.status <> 'done'
+      and public.can_see_task(old.id) then
+      return new;
+    end if;
+
+    raise exception 'You cannot verify this task.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tasks_protect_verification on public.tasks;
+create trigger tasks_protect_verification
+  before update on public.tasks
+  for each row execute function public.protect_task_verification();
+
 -- ---------------------------------------------------------------- policies --
 alter table public.teams enable row level security;
 alter table public.profiles enable row level security;
@@ -151,6 +221,10 @@ create policy profiles_read on public.profiles for select to authenticated using
 drop policy if exists profiles_update_founder on public.profiles;
 create policy profiles_update_founder on public.profiles for update to authenticated
   using (public.is_founder()) with check (public.is_founder());
+
+drop policy if exists profiles_update_self_bio on public.profiles;
+create policy profiles_update_self_bio on public.profiles for update to authenticated
+  using (id = auth.uid()) with check (id = auth.uid());
 
 drop policy if exists tasks_read on public.tasks;
 create policy tasks_read on public.tasks for select to authenticated using (public.can_see_task(id));
@@ -188,11 +262,25 @@ create policy events_read on public.task_events for select to authenticated
 
 drop policy if exists events_insert on public.task_events;
 create policy events_insert on public.task_events for insert to authenticated
-  with check (public.can_see_task(task_id) and actor_id = auth.uid());
+  with check (
+    public.can_see_task(task_id)
+    and actor_id = auth.uid()
+    and (
+      kind <> 'verified'
+      or (
+        public.can_verify_task(task_id)
+        and exists (
+          select 1 from public.tasks t
+          where t.id = task_id and t.verified_by = auth.uid() and t.verified_at is not null
+        )
+      )
+    )
+  );
 
 grant execute on function public.is_founder() to authenticated;
 grant execute on function public.can_create_task(text) to authenticated;
 grant execute on function public.can_manage_task(uuid) to authenticated;
+grant execute on function public.can_verify_task(uuid) to authenticated;
 grant execute on function public.can_see_task(uuid) to authenticated;
 grant execute on function public.can_assign_to(uuid, uuid) to authenticated;
 

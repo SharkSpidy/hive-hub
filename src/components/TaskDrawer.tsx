@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { BadgeCheck, X } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { canAssign, canSetStatus, canVerify, isTaskManager } from '../lib/permissions'
+import { canAssign, canSetStatus, canVerifyTask, isTaskManager } from '../lib/permissions'
 import { STATUSES, STATUS_LABEL } from '../lib/types'
 import { cn, fmtDate, fmtDateTime, relDue } from '../lib/utils'
 import { Avatar, PriorityBadge, StatusBadge, btn, field } from './ui'
@@ -95,12 +95,12 @@ export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClos
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium">Waiting for verification.</p>
-                  <button disabled={!canVerify(me, task)} onClick={() => run(verify(task.id), 'Task verified')} className={btn.accent}>
+                  <button disabled={!canVerifyTask(me, task)} onClick={() => run(verify(task.id), 'Task verified')} className={btn.accent}>
                     Verify
                   </button>
                 </div>
               )}
-              {!task.verifiedAt && !canVerify(me, task) && <p className="mt-1.5 text-xs text-muted-fg">A Lead or Core member who is not assigned to this task verifies it.</p>}
+              {!task.verifiedAt && !canVerifyTask(me, task) && <p className="mt-1.5 text-xs text-muted-fg">A Founder, HIVE Core member, or Sub Team Lead who is not assigned to this task verifies it.</p>}
             </div>
           )}
 
