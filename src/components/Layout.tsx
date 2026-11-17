@@ -7,6 +7,7 @@ import { useStore } from '../lib/store'
 import { atLeast } from '../lib/permissions'
 import { cn } from '../lib/utils'
 import { Avatar, TierBadge } from './ui'
+import NotificationPanel, { BellButton } from './NotificationPanel'
 
 interface BIPEvent extends Event {
   prompt: () => Promise<void>
@@ -18,6 +19,7 @@ export default function Layout() {
   const toast = useStore((s) => s.toast)
   const navigate = useNavigate()
   const [online, setOnline] = useState(navigator.onLine)
+  const [panelOpen, setPanelOpen] = useState(false)
   const [installEvt, setInstallEvt] = useState<BIPEvent | null>(null)
   const {
     needRefresh: [needRefresh],
@@ -79,6 +81,7 @@ export default function Layout() {
           ))}
         </nav>
         <div className="mt-auto space-y-2">
+          <BellButton label="Notifications" onClick={() => setPanelOpen(true)} className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-fg hover:bg-amber-100" />
           {installEvt && (
             <button
               className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-amber-50"
@@ -118,6 +121,7 @@ export default function Layout() {
         </div>
         <div className="flex items-center gap-2">
           <TierBadge tier={me.tier} />
+          <BellButton onClick={() => setPanelOpen(true)} className="flex size-10 items-center justify-center rounded-lg hover:bg-amber-100" />
           <button
             aria-label="Sign out"
             onClick={() => {
@@ -156,6 +160,8 @@ export default function Layout() {
           </NavLink>
         ))}
       </nav>
+
+      {panelOpen && <NotificationPanel onClose={() => setPanelOpen(false)} />}
 
       {(toast || needRefresh) && (
         <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex justify-center px-4 md:bottom-6">

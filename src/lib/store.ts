@@ -1,11 +1,16 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
-import type { Data, Priority, Profile, Status, Task, TaskEvent, Tier } from './types'
+import type { AppNotification, Data, Priority, Profile, Status, Task, TaskEvent, Tier } from './types'
 import { canAssign, canCreateTask, canSetStatus, canVerifyTask, isTaskManager } from './permissions'
 import { supabase } from './supabase'
 import {
   EMPTY_DATA,
   dbAssign,
+  dbClearNotifications,
+  dbGenerateReminders,
+  dbLoadNotifications,
+  dbMarkRead,
+  mapNotification,
   dbInsertEvents,
   dbInsertTask,
   dbSetCoreOwner,
@@ -19,6 +24,7 @@ import {
 } from './db'
 import type { Result } from './db'
 import { uid } from './utils'
+import { showDeviceNotification } from './device'
 
 const ok: Result = { ok: true }
 const no = (error: string): Result => ({ ok: false, error })
@@ -26,6 +32,7 @@ const message = (e: unknown) => (e instanceof Error ? e.message : 'Something wen
 
 interface State {
   data: Data
+  notifications: AppNotification[]
   session: Session | null
   userId: string | null
   booted: boolean
@@ -44,9 +51,57 @@ interface State {
   setTier: (userId: string, tier: Tier) => Result
   setCoreOwner: (teamId: string, coreId: string) => Result
   updateBio: (bio: string) => Result
+  markRead: (ids: string[]) => void
+  markAllRead: () => void
+  clearNotifications: () => void
 }
 
+const REMINDER_EVERY_MS = 10 * 60 * 1000
+
 export const useStore = create<State>()((set, get) => {
+  let channel: ReturnType<NonNullable<typeof supabase>['channel']> | null = null
+  let reminderTimer: ReturnType<typeof setInterval> | null = null
+
+  const stopLive = () => {
+    if (channel) void supabase?.removeChannel(channel)
+    channel = null
+    if (reminderTimer) clearInterval(reminderTimer)
+    reminderTimer = null
+  }
+
+  const loadNotifications = async () => {
+    try {
+      set({ notifications: await dbLoadNotifications() })
+    } catch {
+      /* notifications table not installed yet: the bell just stays empty */
+    }
+  }
+
+  /** Reminder generation + live delivery of new notifications for the signed-in user. */
+  const startLive = (userId: string) => {
+    if (!supabase) return
+    stopLive()
+    const tick = async () => {
+      try {
+        await dbGenerateReminders()
+      } catch {
+        /* function not installed yet */
+      }
+    }
+    void tick().then(loadNotifications)
+    reminderTimer = setInterval(() => void tick(), REMINDER_EVERY_MS)
+    channel = supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload) => {
+        const n = mapNotification(payload.new as Parameters<typeof mapNotification>[0])
+        set((s) => (s.notifications.some((x) => x.id === n.id) ? s : { notifications: [n, ...s.notifications] }))
+        void showDeviceNotification(n)
+        if (document.visibilityState === 'visible' && document.hasFocus()) get().notify(`${n.title}: ${n.body}`)
+        if (n.kind === 'assigned') void reload()
+      })
+      .subscribe()
+  }
+
   const hydrate = async (session: Session) => {
     if (!supabase) return
     const profile = await loadMyProfile(session)
@@ -57,6 +112,7 @@ export const useStore = create<State>()((set, get) => {
     const data = await loadAll()
     if (!data.profiles.some((p) => p.id === profile.id)) data.profiles = [...data.profiles, profile]
     set({ session, userId: profile.id, data })
+    startLive(profile.id)
   }
 
   const reload = async () => {
@@ -105,6 +161,7 @@ export const useStore = create<State>()((set, get) => {
 
   return {
     data: EMPTY_DATA,
+    notifications: [],
     session: null,
     userId: null,
     booted: false,
@@ -128,7 +185,10 @@ export const useStore = create<State>()((set, get) => {
         set({ booted: true })
       }
       supabase.auth.onAuthStateChange((_event, session) => {
-        if (!session) set({ session: null, userId: null, data: EMPTY_DATA })
+        if (!session) {
+          stopLive()
+          set({ session: null, userId: null, data: EMPTY_DATA, notifications: [] })
+        }
       })
     },
 
@@ -158,7 +218,8 @@ export const useStore = create<State>()((set, get) => {
       try {
         await supabase?.auth.signOut()
       } finally {
-        set({ session: null, userId: null, data: EMPTY_DATA })
+        stopLive()
+        set({ session: null, userId: null, data: EMPTY_DATA, notifications: [] })
       }
     },
 
@@ -291,6 +352,29 @@ export const useStore = create<State>()((set, get) => {
       set((s) => ({ data: { ...s.data, teams: s.data.teams.map((t) => (t.id === teamId ? { ...t, coreOwnerId: coreId } : t)) } }))
       if (supabase) persist(() => dbSetCoreOwner(teamId, coreId))
       return ok
+    },
+
+    markRead: (ids) => {
+      const uidMe = get().userId
+      if (!uidMe || ids.length === 0) return
+      const now = Date.now()
+      set((s) => ({ notifications: s.notifications.map((n) => (ids.includes(n.id) && !n.readAt ? { ...n, readAt: now } : n)) }))
+      if (supabase) persist(() => dbMarkRead(ids, uidMe))
+    },
+
+    markAllRead: () => {
+      const uidMe = get().userId
+      if (!uidMe) return
+      const now = Date.now()
+      set((s) => ({ notifications: s.notifications.map((n) => (n.readAt ? n : { ...n, readAt: now })) }))
+      if (supabase) persist(() => dbMarkRead('all', uidMe))
+    },
+
+    clearNotifications: () => {
+      const uidMe = get().userId
+      if (!uidMe) return
+      set({ notifications: [] })
+      if (supabase) persist(() => dbClearNotifications(uidMe))
     },
 
     updateBio: (bio) => {

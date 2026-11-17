@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, Search } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { canCreateTask, canSeeTask, isAssigned, isOrgWide } from '../lib/permissions'
@@ -17,7 +18,11 @@ export default function Tasks() {
   const data = useStore((s) => s.data)
     const [teamId, setTeamId] = useState('')
   const [q, setQ] = useState('')
-  const [open, setOpen] = useState<string | null>(null)
+  // Notifications deep-link here with ?task=<id>[&tab=chat].
+  const [params, setParams] = useSearchParams()
+  const open = params.get('task')
+  const openTab = params.get('tab') === 'chat' ? 'chat' : 'details'
+  const setOpen = (id: string | null) => setParams(id ? { task: id } : {}, { replace: true })
   const [creating, setCreating] = useState(false)
   const orgWide = isOrgWide(me)
   const broad = orgWide || me.tier === 'lead'
@@ -112,7 +117,7 @@ export default function Tasks() {
         </div>
       )}
 
-      {open && <TaskDrawer taskId={open} onClose={() => setOpen(null)} />}
+      {open && <TaskDrawer key={open} taskId={open} initialTab={openTab} onClose={() => setOpen(null)} />}
       {creating && <NewTaskDialog onClose={() => setCreating(false)} />}
     </>
   )

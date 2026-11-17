@@ -1,16 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BadgeCheck, X } from 'lucide-react'
+import TaskChat from './TaskChat'
 import { useStore } from '../lib/store'
 import { canAssign, canSetStatus, canVerifyTask, isTaskManager } from '../lib/permissions'
 import { STATUSES, STATUS_LABEL } from '../lib/types'
 import { cn, fmtDate, fmtDateTime, relDue } from '../lib/utils'
 import { Avatar, PriorityBadge, StatusBadge, btn, field } from './ui'
 
-export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+export default function TaskDrawer({ taskId, onClose, initialTab = 'details' }: { taskId: string; onClose: () => void; initialTab?: 'details' | 'chat' }) {
   const me = useStore((s) => s.me())!
   const data = useStore((s) => s.data)
   const { setStatus, verify, assign, unassign, notify } = useStore.getState()
   const closeRef = useRef<HTMLButtonElement>(null)
+  const [tab, setTab] = useState<'details' | 'chat'>(initialTab)
+  const unreadChat = useStore((s) => s.notifications.filter((n) => n.kind === 'chat' && n.taskId === taskId && !n.readAt).length)
   const task = data.tasks.find((t) => t.id === taskId)
 
   useEffect(() => {
@@ -52,6 +55,24 @@ export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClos
           </button>
         </header>
 
+        <div role="tablist" aria-label="Task sections" className="flex border-b border-line/70 px-2">
+          {(['details', 'chat'] as const).map((k) => (
+            <button
+              key={k}
+              role="tab"
+              aria-selected={tab === k}
+              onClick={() => setTab(k)}
+              className={cn('relative min-h-11 px-4 text-sm font-semibold capitalize', tab === k ? 'border-b-2 border-primary-dark text-fg' : 'text-muted-fg hover:text-fg')}
+            >
+              {k === 'chat' ? 'Chat' : 'Details'}
+              {k === 'chat' && unreadChat > 0 && tab !== 'chat' && <span className="absolute top-2.5 right-1.5 size-2 rounded-full bg-danger" aria-label="New messages" />}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'chat' ? (
+          <TaskChat taskId={task.id} />
+        ) : (
         <div className="flex-1 space-y-5 overflow-y-auto p-4">
           <p className="text-sm leading-relaxed text-fg">{task.description}</p>
           <dl className="grid grid-cols-2 gap-3 text-sm">
@@ -162,6 +183,7 @@ export default function TaskDrawer({ taskId, onClose }: { taskId: string; onClos
             </ul>
           </div>
         </div>
+        )}
       </section>
     </div>
   )

@@ -62,6 +62,27 @@ export interface TaskEvent {
   at: number
 }
 
+export type NotificationKind = 'due_2d' | 'due_1d' | 'assigned' | 'chat'
+
+export interface AppNotification {
+  id: string
+  userId: string
+  kind: NotificationKind
+  taskId: string | null
+  title: string
+  body: string
+  createdAt: number
+  readAt: number | null
+}
+
+export interface TaskMessage {
+  id: string
+  taskId: string
+  senderId: string
+  body: string
+  createdAt: number
+}
+
 export interface Data {
   profiles: Profile[]
   teams: Team[]

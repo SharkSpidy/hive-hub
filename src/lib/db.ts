@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import type { Data, Priority, Profile, Status, Task, TaskEvent, Team, Tier } from './types'
+import type { AppNotification, Data, NotificationKind, Priority, Profile, Status, Task, TaskEvent, TaskMessage, Team, Tier } from './types'
 import { supabase } from './supabase'
 import { uid } from './utils'
 
@@ -254,5 +254,84 @@ export async function dbUpdateBio(userId: string, bio: string): Promise<Result> 
 export async function dbSetCoreOwner(teamId: string, coreId: string | null): Promise<Result> {
   if (!supabase) return ok
   const { error } = await supabase.from('teams').update({ core_owner_id: coreId }).eq('id', teamId)
+  return error ? fail(error.message) : ok
+}
+
+// ------------------------------------------------- notifications & chat -----
+// Needs supabase/notifications_chat.sql. Until it is run these calls fail softly.
+interface NotificationRow {
+  id: string
+  user_id: string
+  kind: NotificationKind
+  task_id: string | null
+  title: string
+  body: string | null
+  created_at: string | null
+  read_at: string | null
+}
+interface MessageRow {
+  id: string
+  task_id: string
+  sender_id: string
+  body: string
+  created_at: string | null
+}
+
+export const mapNotification = (r: NotificationRow): AppNotification => ({
+  id: r.id,
+  userId: r.user_id,
+  kind: r.kind,
+  taskId: r.task_id,
+  title: r.title,
+  body: r.body ?? '',
+  createdAt: ms(r.created_at) ?? Date.now(),
+  readAt: ms(r.read_at),
+})
+
+export const mapMessage = (r: MessageRow): TaskMessage => ({
+  id: r.id,
+  taskId: r.task_id,
+  senderId: r.sender_id,
+  body: r.body,
+  createdAt: ms(r.created_at) ?? Date.now(),
+})
+
+/** Creates any due-in-2-days / due-in-1-day reminders that are now owed (idempotent). */
+export async function dbGenerateReminders(): Promise<void> {
+  if (!supabase) return
+  await supabase.rpc('generate_task_reminders')
+}
+
+export async function dbLoadNotifications(): Promise<AppNotification[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as NotificationRow[]).map(mapNotification)
+}
+
+export async function dbMarkRead(ids: string[] | 'all', userId: string): Promise<Result> {
+  if (!supabase) return ok
+  let q = supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId).is('read_at', null)
+  if (ids !== 'all') q = q.in('id', ids)
+  const { error } = await q
+  return error ? fail(error.message) : ok
+}
+
+export async function dbClearNotifications(userId: string): Promise<Result> {
+  if (!supabase) return ok
+  const { error } = await supabase.from('notifications').delete().eq('user_id', userId)
+  return error ? fail(error.message) : ok
+}
+
+export async function dbLoadMessages(taskId: string): Promise<TaskMessage[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('task_messages').select('*').eq('task_id', taskId).order('created_at', { ascending: true }).limit(500)
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as MessageRow[]).map(mapMessage)
+}
+
+export async function dbSendMessage(m: TaskMessage): Promise<Result> {
+  if (!supabase) return ok
+  const { error } = await supabase.from('task_messages').insert({ id: m.id, task_id: m.taskId, sender_id: m.senderId, body: m.body })
   return error ? fail(error.message) : ok
 }
