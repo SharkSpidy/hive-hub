@@ -1,70 +1,121 @@
-# HIVE Hub
+# 🐝 HIVE Hub
 
-Task tracking and team visibility for HIVE. React + TypeScript + Vite + Tailwind, installable as a PWA,
-with a Supabase backend for login and data. There is **no demo data and no sign-up**: every person is
-created by a HIVE admin.
+> **CONFIDENTIALITY NOTICE:** This repository and its contents are closed-source and proprietary to the HIVE organization. Do not distribute, fork, or share outside the internal team.
 
-## Run it
+Welcome to **HIVE Hub**, our internal operations, event management, and task-tracking platform. This document serves as a guide for new developers and team members to understand the project architecture, set up their local environment, and grasp the core operational logic.
 
+---
+
+## 🛠 Tech Stack
+
+* **Frontend:** React, TypeScript, Vite
+* **Styling:** Tailwind CSS, shadcn/ui (UI components)
+* **Backend & Database:** Supabase (PostgreSQL, Auth, Row Level Security)
+* **State Management / Data Fetching:** Custom React hooks / Context (via Supabase client)
+
+---
+
+## 🚀 Getting Started (Local Development)
+
+### Prerequisites
+* Node.js (v18+ recommended)
+* npm or yarn
+* Access to the HIVE Supabase project dashboard (request from Core team)
+
+### 1. Clone & Install
 ```bash
+git clone <repository-url>
+cd hive-hub-main
 npm install
-cp .env.example .env    # then paste your Supabase URL + anon key
-npm run dev             # http://localhost:5173
-npm run build && npm run preview
 ```
 
-## Backend setup (once)
+### 2. Environment Variables
+Create a `.env.local` file in the root directory and add your Supabase connection details:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. SQL Editor → New query → paste all of `supabase/schema.sql` → Run. It creates `teams`, `profiles`,
-   `tasks`, `task_assignments`, `task_events`, the row-level-security policies, and the
-   `username_email()` helper the login form uses.
-3. Project Settings → API → copy **Project URL** and **anon public** key into `.env`:
-   ```env
-   VITE_SUPABASE_URL=https://xxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJ...
-   ```
-4. Restart `npm run dev`.
+### 3. Run the Development Server
+```bash
+npm run dev
+```
+The app will be available at `http://localhost:5173`.
 
-### Adding a person (manual, no sign-up)
+---
 
-1. Authentication → Users → **Add user**: email `sanjay.rao@hive.local`, a password, and confirm the user.
-2. Table editor → `profiles` → insert a row whose `id` is that user's UUID, `full_name` "Sanjay Rao",
-   `email` the same address, `tier` one of `volunteer | member | lead | core | founder`, `team_id` one of
-   the team ids (`tech`, `design`, `events`, `content`, `outreach`, `ops`).
-3. They log in with `sanjay.rao` (or the full email) and the password. The username resolves to the email
-   through `public.username_email()`.
+## 🔐 Authentication & Account Provisioning
 
-If you would rather log in with plain emails only, skip step 1's username convention — the form accepts a
-full email address too. `VITE_AUTH_EMAIL_DOMAIN` (optional) turns bare usernames into
-`<username>@<domain>` when the helper is not installed.
+**HIVE Hub does not have public sign-ups.** All accounts are manually provisioned by Administrators (Founders/Core) to maintain strict access control.
 
-Existing auth users created before `schema.sql` ran: run the file again, then add their profile rows.
+### Login Convention
+* **Username:** `firstname.lastname` (e.g., `john.doe`)
+  *(Note: The backend resolves this to `firstname.lastname@hive.local` or their actual Gmail via a custom SQL function).*
+* **Default Password Pattern:** `FIRSTNAME@DDMM` (First name in ALL CAPS, followed by @, and their 4-digit birthdate). Example: `JOHN@0511`.
 
-### Keeping the backend awake
+### How to Provision a New User (Admin Guide)
+1. Go to the **Supabase Dashboard -> Authentication -> Users**.
+2. Click **Add User** and enter their email and the patterned password.
+3. Copy the generated **User UUID**.
+4. Go to the **SQL Editor** or **Table Editor** and insert their profile into `public.profiles`:
+```sql
+INSERT INTO public.profiles (id, full_name, email, tier, team_id, bio)
+VALUES (
+  '<copied-uuid>', 
+  'John Doe', 
+  'john.doe@gmail.com', 
+  'member', -- volunteer, member, lead, core, or founder
+  'tech',   -- tech, design, events, content, outreach, ops
+  'Short bio here'
+);
+```
 
-Supabase pauses free projects after 7 days without requests. `.github/workflows/keep-alive.yml` queries
-`profiles` once a day so the project never pauses. Add repository secrets `SUPABASE_URL` and
-`SUPABASE_ANON_KEY` (Settings → Secrets and variables → Actions), then run the workflow once manually.
+---
 
-## What the app does
+## 🛡 Roles & Permissions (RBAC)
 
-- Login page is the front page (`/`), username + password only, with no registration route.
-- Tasks board (To Do / In Progress / Done), task drawer with assign, status and verification.
-- Global dashboard (Core and Founders): KPIs, velocity, deadlines, subteam bottlenecks.
-- Team page, profile stats, Founder admin for tiers and Core owners.
-- Installable PWA with offline banner and update prompt.
+The application uses Supabase **Row Level Security (RLS)** to enforce strict data access based on user tiers.
 
-Permission rules live in `src/lib/permissions.ts` and are mirrored by the SQL helpers
-(`is_founder`, `can_create_task`, `can_manage_task`, `can_see_task`, `can_assign_to`) so the database and
-the UI agree. `src/lib/db.ts` maps Supabase rows to the types in `src/lib/types.ts`.
+| Tier | Access Level | Description |
+| :--- | :--- | :--- |
+| **Founder / Core** | Global Admin | Can read, create, manage, delete, and verify tasks across *all* subteams. Can assign tasks to anyone. |
+| **Lead** | Team Admin | Can create and manage tasks *only* within their assigned `team_id`. Can only assign tasks to members within their team. |
+| **Member / Volunteer** | Contributor | Can view team tasks and update the status (`todo`, `in_progress`, `done`) of tasks assigned specifically to them. Cannot create tasks. |
 
-## Design
+---
 
-Colour tokens are in `src/index.css` (`@theme`): honey `#FFD629`, gold `#E8B800`, ink `#0A0A0A` on warm
-paper `#FFFDF4`. The logo lives in `src/components/Logo.tsx` and `public/favicon.svg`.
+## 📁 Project Structure
 
-## Deploy
+```text
+src/
+├── components/       # Reusable UI components (buttons, dialogs, cards)
+│   ├── ui/           # Base shadcn/ui components
+│   └── ...           # Domain-specific components (TaskCard, NewTaskDialog)
+├── lib/              # Core logic and utilities
+│   ├── supabase.ts   # Supabase client initialization
+│   ├── db.ts         # Database interaction functions
+│   ├── permissions.ts# Frontend permission checks (mirrors RLS)
+│   ├── types.ts      # TypeScript interfaces for database schema
+│   └── utils.ts      # Helper functions (Tailwind merges, etc.)
+├── pages/            # Top-level route components
+│   ├── Admin.tsx     # Admin dashboard
+│   ├── Dashboard.tsx # Main task overview
+│   ├── Login.tsx     # Auth entry point
+│   ├── Profile.tsx   # User profile management
+│   └── Tasks.tsx     # Detailed task views
+├── index.css         # Global Tailwind styles
+└── main.tsx          # React application entry point
+```
 
-Push to GitHub, import in Vercel (Vite preset), and set `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` in
-the project's environment variables. `vercel.json` rewrites deep links to `index.html`.
+---
+
+## 🗄 Database Schema Highlights
+
+The database is built around a few core tables:
+* `profiles`: Extends the Supabase `auth.users` table with names, roles (`tier`), and `team_id`.
+* `teams`: Defines the subteams (Tech, Design, etc.) and their Core owner.
+* `tasks`: Stores task details, status, priority, and verification timestamps.
+* `task_assignments`: Maps tasks to assignees.
+* `task_events`: An audit log of state changes for tasks.
+
+*For any database schema changes, refer to `supabase/schema.sql` and ensure you update the TypeScript definitions in `src/lib/types.ts` accordingly.*
