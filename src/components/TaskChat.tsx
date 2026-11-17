@@ -13,7 +13,8 @@ export default function TaskChat({ taskId }: { taskId: string }) {
   const me = useStore((s) => s.me())!
   const profiles = useStore((s) => s.data.profiles)
   const task = useStore((s) => s.data.tasks.find((t) => t.id === taskId))
-  const unreadChat = useStore((s) => s.notifications.filter((n) => n.kind === 'chat' && n.taskId === taskId && !n.readAt))
+  const notifications = useStore((s) => s.notifications)
+  const unreadChat = useMemo(() => notifications.filter((n) => n.kind === 'chat' && n.taskId === taskId && !n.readAt), [notifications, taskId])
   const [messages, setMessages] = useState<TaskMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState('')
