@@ -56,17 +56,17 @@ interface State {
   clearNotifications: () => void
 }
 
-const REMINDER_EVERY_MS = 10 * 60 * 1000
+const AUTO_REFRESH_EVERY_MS = 10 * 60 * 1000
 
 export const useStore = create<State>()((set, get) => {
   let channel: ReturnType<NonNullable<typeof supabase>['channel']> | null = null
-  let reminderTimer: ReturnType<typeof setInterval> | null = null
+  let refreshTimer: ReturnType<typeof setInterval> | null = null
 
   const stopLive = () => {
     if (channel) void supabase?.removeChannel(channel)
     channel = null
-    if (reminderTimer) clearInterval(reminderTimer)
-    reminderTimer = null
+    if (refreshTimer) clearInterval(refreshTimer)
+    refreshTimer = null
   }
 
   const loadNotifications = async () => {
@@ -89,7 +89,9 @@ export const useStore = create<State>()((set, get) => {
       }
     }
     void tick().then(loadNotifications)
-    reminderTimer = setInterval(() => void tick(), REMINDER_EVERY_MS)
+    refreshTimer = setInterval(() => {
+      void tick().then(() => Promise.all([reload(), loadNotifications()]))
+    }, AUTO_REFRESH_EVERY_MS)
     channel = supabase
       .channel(`notifications:${userId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload) => {
